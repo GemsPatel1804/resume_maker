@@ -39,7 +39,15 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Allowing access to the Camera allows you take a photo for your Profile Picture.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Allowing access to Photos allows you to choose a photo for your Profile Picture.</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 </dict>
 </plist>
