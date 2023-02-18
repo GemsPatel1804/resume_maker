@@ -17,12 +17,12 @@ class HomeController extends GetxController {
 
   RxList<ResumeData> resumeList = RxList([]);
 
-  getAllResume() {
+  getAllResume() async {
     try {
       isLoading.value = true;
       var data = FirebaseFirestore.instance.collection("resume").snapshots();
 
-      data.forEach((element) {
+      await data.forEach((element) {
         resumeList.clear();
         element.docs.asMap().forEach((index, data) {
           return resumeList.add(ResumeData(
@@ -38,6 +38,7 @@ class HomeController extends GetxController {
             summary: data["summary"],
           ));
         });
+        isLoading.value = false;
       });
 
       isLoading.value = false;

@@ -84,7 +84,10 @@ class AddResumeDetailsScreen extends StatelessWidget {
               onChange: (val) {
                 _controller.mobileNumberError.value = "";
               },
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+              ],
               keyboardType: TextInputType.number,
             ),
             hSizedBox20,
@@ -119,13 +122,16 @@ class AddResumeDetailsScreen extends StatelessWidget {
               },
             ),
             hSizedBox36,
-            AppButton(
-              text: _controller.isEdit == true ? "Update" : "Add",
-              onPressed: () {
-                _controller.isEdit == true
-                    ? _controller.onEdit()
-                    : _controller.onAdd();
-              },
+            Obx(
+              () => AppButton(
+                loader: _controller.isLoading.value,
+                text: _controller.isEdit == true ? "Update" : "Add",
+                onPressed: () {
+                  _controller.isEdit == true
+                      ? _controller.onEdit()
+                      : _controller.onAdd();
+                },
+              ),
             )
           ],
         ),

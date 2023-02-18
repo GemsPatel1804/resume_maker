@@ -38,6 +38,7 @@ class AppTextField extends StatelessWidget {
                 ),
               ]),
           child: TextFormField(
+            keyboardType: keyboardType,
             controller: controller,
             onChanged: onChange,
             inputFormatters: inputFormatters,

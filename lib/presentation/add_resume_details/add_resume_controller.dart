@@ -148,10 +148,11 @@ class AddResumeDetailsController extends GetxController {
 
   bool onvalid() {
     RxBool isValid = true.obs;
-
-    if (profileImage.value.path.isEmpty) {
-      appToast(msg: "Select Profile");
-      isValid.value = false;
+    if (isEdit == false) {
+      if (profileImage.value.path.isEmpty) {
+        appToast(msg: "Select Profile");
+        isValid.value = false;
+      }
     }
 
     if (name.value.text.isEmpty) {
@@ -212,6 +213,8 @@ class AddResumeDetailsController extends GetxController {
           uiSettings: [
             AndroidUiSettings(
               toolbarTitle: "edit".tr,
+              statusBarColor: Colors.black,
+              toolbarColor: Colors.blue,
               toolbarWidgetColor: Colors.white,
               initAspectRatio: CropAspectRatioPreset.square,
               lockAspectRatio: true,
