@@ -2,15 +2,36 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:resume_maker/presentation/home/home_controller.dart';
 import 'package:resume_maker/presentation/widget/app_toast.dart';
 
 import '../../core/utils/constant_sizebox.dart';
 
 class AddResumeDetailsController extends GetxController {
+  @override
+  void onInit() {
+    if (Get.arguments[0] != null) {
+      data = Get.arguments[0];
+      name.value.text = data.name!;
+      email.value.text = data.email!;
+      mobileNumber.value.text = data.mobileNumber!;
+      address.value.text = data.address!;
+      role.value.text = data.role!;
+      summary.value.text = data.summary!;
+    }
+    isEdit = Get.arguments[1];
+    update();
+    super.onInit();
+  }
+
+  ResumeData data = ResumeData();
+  bool isEdit = false;
+
   RxBool isLoading = false.obs;
 
   Rx<TextEditingController> name = TextEditingController(text: "").obs;
@@ -71,10 +92,7 @@ class AddResumeDetailsController extends GetxController {
                       width: 1.3,
                     ),
                   ),
-                  // child: Image.asset(
-                  //   ImageConstant.camera,
-                  //   color: AppColors.appColor,
-                  // ),
+                  child: Icon(Icons.camera),
                 ),
                 title: Text(
                   "Take a photo",
@@ -106,10 +124,7 @@ class AddResumeDetailsController extends GetxController {
                       width: 1.3,
                     ),
                   ),
-                  // child: Image.asset(
-                  //   ImageConstant.gallery,
-                  //   color: AppColors.appColor,
-                  // ),
+                  child: Icon(Icons.photo_album),
                 ),
                 title: Text(
                   "Gallery",
@@ -134,6 +149,11 @@ class AddResumeDetailsController extends GetxController {
   bool onvalid() {
     RxBool isValid = true.obs;
 
+    if (profileImage.value.path.isEmpty) {
+      appToast(msg: "Select Profile");
+      isValid.value = false;
+    }
+
     if (name.value.text.isEmpty) {
       nameError.value = "Name field require";
       isValid.value = false;
@@ -142,7 +162,7 @@ class AddResumeDetailsController extends GetxController {
     if (email.value.text.isEmpty) {
       emailError.value = "Email field require";
       isValid.value = false;
-    } else if (!name.value.text.isEmail) {
+    } else if (!email.value.text.isEmail) {
       emailError.value = "Enter Valid Email";
       isValid.value = false;
     }
@@ -202,29 +222,28 @@ class AddResumeDetailsController extends GetxController {
           ]);
       if (croppedFile != null) {
         profileImage.value = File(croppedFile.path);
-
-        // print("===IMAGE SIZE==");
-        // print(profileImage.value.readAsBytesSync().lengthInBytes);
-
-        // multipartFile = dio.MultipartFile.fromFileSync(
-        //   File(croppedFile.path).path,
-        //   filename: path.basename(File(croppedFile.path).path),
-        // );
-        // edit();
       }
     } else {
       return;
     }
   }
 
-  onAdd() {
+  onAdd() async {
     if (onvalid()) {
       isLoading.value = true;
 
       var id = FirebaseFirestore.instance.collection("resume").doc().id;
 
+      Reference ref = FirebaseStorage.instance
+          .ref()
+          .child("images/${profileImage.value.path}");
+
+      TaskSnapshot uploadTask = await ref.putFile(profileImage.value);
+
+      String downloadURL = await uploadTask.ref.getDownloadURL();
+
       FirebaseFirestore.instance.collection("resume").doc(id).set({
-        "profile_url": "",
+        "profile_url": downloadURL,
         "name": name.value.text,
         "email": email.value.text,
         "mobile_number": mobileNumber.value.text,
@@ -232,8 +251,42 @@ class AddResumeDetailsController extends GetxController {
         "address": address.value.text,
         "summary": summary.value.text,
         "doc_id": id,
+        "create_at": DateTime.now(),
+        "update_at": DateTime.now(),
       }).then((value) {
         appToast(msg: "UPLOAD SUCCESSFULLY");
+        Get.back();
+        isLoading.value = false;
+      });
+    } else {}
+  }
+
+  onEdit() async {
+    if (onvalid()) {
+      isLoading.value = true;
+      String downloadURL = "";
+      if (profileImage.value.path.isNotEmpty &&
+          profileImage.value.path.toString() != "null") {
+        Reference ref = FirebaseStorage.instance
+            .ref()
+            .child("images/${profileImage.value.path}");
+
+        TaskSnapshot uploadTask = await ref.putFile(profileImage.value);
+
+        downloadURL = await uploadTask.ref.getDownloadURL();
+      }
+
+      FirebaseFirestore.instance.collection("resume").doc(data.docId).update({
+        "profile_url": downloadURL.isNotEmpty ? downloadURL : data.profileUrl,
+        "name": name.value.text,
+        "email": email.value.text,
+        "mobile_number": mobileNumber.value.text,
+        "role": role.value.text,
+        "address": address.value.text,
+        "summary": summary.value.text,
+        "update_at": DateTime.now()
+      }).then((value) {
+        appToast(msg: "UPDATE SUCCESSFULLY");
         Get.back();
         isLoading.value = false;
       });

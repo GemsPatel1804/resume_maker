@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:resume_maker/core/utils/app_image.dart';
@@ -14,74 +15,149 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xfff5f5f5),
       appBar: AppBar(
         title: Text("Resume Maker"),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: Icon(Icons.add),
-      ),
-      body: ListView.separated(
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        itemCount: 4,
-        separatorBuilder: (context, index) => SizedBox(height: 10),
-        itemBuilder: (context, index) {
-          return Container(
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      height: 50,
-                      width: 50,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        image: DecorationImage(
-                          image: AssetImage(AppImage.defaultImage),
-                        ),
-                      ),
-                    ),
-                    wSizedBox10,
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Gautam Davara"),
-                        Text("gems4860@gmail.com"),
-                        Text(DateTime.now().toString()),
-                      ],
-                    )
-                  ],
-                ),
-                hSizedBox10,
-                Row(
-                  children: [
-                    actionButton(
-                      icon: Icons.edit,
-                      title: "Edit",
-                      onTap: () {
-                        Get.toNamed(AppRoutes.addResumeDetails);
-                      },
-                    ),
-                    wSizedBox10,
-                    actionButton(
-                      icon: Icons.visibility,
-                      title: "View",
-                      onTap: () {
-                        Get.toNamed(AppRoutes.viewResume);
-                      },
-                    ),
-                    wSizedBox10,
-                    actionButton(
-                      icon: Icons.delete,
-                      title: "Delete",
-                      onTap: () {},
-                    ),
-                  ],
-                )
-              ],
-            ),
+        onPressed: () {
+          Get.toNamed(
+            AppRoutes.addResumeDetails,
+            arguments: [null, false],
           );
         },
+        child: Icon(Icons.add),
+      ),
+      body: Obx(
+        () => _controller.isLoading.value
+            ? Center(child: CircularProgressIndicator.adaptive())
+            : ListView.separated(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                itemCount: _controller.resumeList.length,
+                separatorBuilder: (context, index) => SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  var data = _controller.resumeList[index];
+                  return Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              height: 50,
+                              width: 50,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                image: DecorationImage(
+                                  image: data.profileUrl!.isEmpty
+                                      ? AssetImage(AppImage.defaultImage)
+                                      : NetworkImage(data.profileUrl!)
+                                          as ImageProvider,
+                                ),
+                              ),
+                            ),
+                            wSizedBox10,
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(data.name!),
+                                Text(data.email!),
+                                Text(data.createAt.toString()),
+                              ],
+                            )
+                          ],
+                        ),
+                        hSizedBox10,
+                        Row(
+                          children: [
+                            actionButton(
+                              icon: Icons.edit,
+                              title: "Edit",
+                              color: Colors.blue,
+                              onTap: () {
+                                Get.toNamed(
+                                  AppRoutes.addResumeDetails,
+                                  arguments: [
+                                    _controller.resumeList[index],
+                                    true
+                                  ],
+                                );
+                              },
+                            ),
+                            wSizedBox10,
+                            actionButton(
+                              icon: Icons.visibility,
+                              title: "View",
+                              color: Colors.green,
+                              onTap: () {
+                                Get.toNamed(
+                                  AppRoutes.viewResume,
+                                  arguments: _controller.resumeList[index],
+                                );
+                              },
+                            ),
+                            wSizedBox10,
+                            actionButton(
+                              icon: Icons.delete,
+                              title: "Delete",
+                              color: Colors.red,
+                              onTap: () {
+                                showDialog<void>(
+                                  context: context,
+                                  barrierDismissible:
+                                      false, // user must tap button!
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      title: const Text('Delete Alert'),
+                                      content: SingleChildScrollView(
+                                        child: ListBody(
+                                          children: const <Widget>[
+                                            Text(
+                                                'Are you sure you want to delete?'),
+                                          ],
+                                        ),
+                                      ),
+                                      actions: <Widget>[
+                                        TextButton(
+                                          child: const Text('Cancel'),
+                                          onPressed: () {
+                                            Get.back();
+                                          },
+                                        ),
+                                        TextButton(
+                                          child: const Text('Yes'),
+                                          onPressed: () {
+                                            Get.back();
+
+                                            FirebaseFirestore.instance
+                                                .collection("resume")
+                                                .doc(data.docId)
+                                                .delete();
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+
+                                // FirebaseFirestore.instance
+                                //     .collection("resume")
+                                //     .doc(data.docId)
+                                //     .delete();
+                              },
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  );
+                },
+              ),
       ),
     );
   }
@@ -90,25 +166,33 @@ class HomeScreen extends StatelessWidget {
     required String title,
     required IconData icon,
     required Function() onTap,
+    required Color color,
   }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(6),
       child: Ink(
         decoration: BoxDecoration(
-          color: Colors.amber,
+          color: color,
           borderRadius: BorderRadius.circular(6),
         ),
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 8,
+          ),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(6),
+          ),
           child: Row(
             children: [
-              Text(title),
-              wSizedBox10,
-              Icon(
-                icon,
-                size: 18,
+              Text(
+                title,
+                style: TextStyle(color: Colors.white),
               ),
+              wSizedBox10,
+              Icon(icon, size: 18, color: Colors.white),
             ],
           ),
         ),

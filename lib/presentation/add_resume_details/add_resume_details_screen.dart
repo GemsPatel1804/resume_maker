@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:resume_maker/core/utils/app_image.dart';
 import 'package:resume_maker/core/utils/constant_sizebox.dart';
@@ -15,6 +16,7 @@ class AddResumeDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print(_controller.isEdit);
     return Scaffold(
       appBar: AppBar(
         title: Text("Resume Details"),
@@ -27,12 +29,28 @@ class AddResumeDetailsScreen extends StatelessWidget {
             Center(child: title("Upload profile")),
             hSizedBox10,
             Center(
-              child: Container(
-                height: 100,
-                width: 100,
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage(AppImage.defaultImage),
+              child: Obx(
+                () => GestureDetector(
+                  onTap: () {
+                    _controller.pickProfileFile(context);
+                  },
+                  child: Container(
+                    height: 100,
+                    width: 100,
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: _controller.isEdit == true &&
+                                (_controller.profileImage.value.path.isEmpty ||
+                                    _controller.profileImage.value.path
+                                            .toString() ==
+                                        "null")
+                            ? NetworkImage(_controller.data.profileUrl ?? "")
+                            : _controller.profileImage.value.path.isEmpty
+                                ? AssetImage(AppImage.defaultImage)
+                                : FileImage(_controller.profileImage.value)
+                                    as ImageProvider,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -66,6 +84,8 @@ class AddResumeDetailsScreen extends StatelessWidget {
               onChange: (val) {
                 _controller.mobileNumberError.value = "";
               },
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              keyboardType: TextInputType.number,
             ),
             hSizedBox20,
             title("Addess"),
@@ -100,9 +120,11 @@ class AddResumeDetailsScreen extends StatelessWidget {
             ),
             hSizedBox36,
             AppButton(
-              text: "Add",
+              text: _controller.isEdit == true ? "Update" : "Add",
               onPressed: () {
-                _controller.onAdd();
+                _controller.isEdit == true
+                    ? _controller.onEdit()
+                    : _controller.onAdd();
               },
             )
           ],
